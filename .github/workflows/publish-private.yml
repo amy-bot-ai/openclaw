@@ -3,8 +3,9 @@ name: Publish to Private Registry
 on:
   push:
     tags:
-      # Match stable release tags only (e.g. v2026.3.7), skip beta/prerelease
+      # Match stable release tags (e.g. v2026.3.7) and fork patches (e.g. v2026.3.8-1)
       - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-[0-9]+"
   workflow_dispatch:
     inputs:
       tag:
