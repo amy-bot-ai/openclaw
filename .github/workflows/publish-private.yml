@@ -1,8 +1,10 @@
 name: Publish to Private Registry
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      # Match stable release tags only (e.g. v2026.3.7), skip beta/prerelease
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 concurrency:
   group: publish-private-${{ github.ref }}
@@ -14,11 +16,16 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Checkout
+      - name: Checkout release tag
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.ref }}
           submodules: false
+
+      - name: Fetch workflow files from main
+        run: |
+          git fetch origin main --depth=1
+          git checkout origin/main -- .github/
 
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -47,12 +54,10 @@ jobs:
       - name: Publish to private registry
         run: |
           set -euo pipefail
-          VERSION="${{ github.event.release.tag_name }}"
-          VERSION="${VERSION#v}"
+          VERSION="${GITHUB_REF#refs/tags/v}"
           npm publish --registry https://npmlib.amybot.ai/ --access restricted --no-git-checks
 
       - name: Verify
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          VERSION="${VERSION#v}"
+          VERSION="${GITHUB_REF#refs/tags/v}"
           echo "Published @amybot/openclaw@${VERSION} to https://npmlib.amybot.ai/"
