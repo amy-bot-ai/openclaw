@@ -68,7 +68,7 @@ jobs:
           set -euo pipefail
           VERSION="${PUBLISH_REF#refs/tags/}"
           VERSION="${VERSION#v}"
-          npm publish --registry https://npmlib.amybot.ai/ --access restricted --no-git-checks
+          npm publish --registry https://npmlib.amybot.ai/ --access restricted --no-git-checks --ignore-scripts
 
       - name: Verify
         run: |
