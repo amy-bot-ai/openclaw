@@ -42,7 +42,7 @@ jobs:
           use-sticky-disk: "false"
 
       - name: Build
-        run: pnpm build
+        run: pnpm build && pnpm ui:build
 
       - name: Configure private registry auth
         run: |
