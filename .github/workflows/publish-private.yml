@@ -1,0 +1,56 @@
+name: Publish to Private Registry
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: publish-private-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: blacksmith-16vcpu-ubuntu-2404
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+          use-sticky-disk: "true"
+
+      - name: Build
+        run: pnpm build
+
+      - name: Configure private registry auth
+        run: |
+          echo "//npmlib.amybot.ai/:_authToken=${PRIVATE_NPM_TOKEN}" > .npmrc
+        env:
+          PRIVATE_NPM_TOKEN: ${{ secrets.PRIVATE_NPM_TOKEN }}
+
+      - name: Rename package for private registry
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.name = '@amybot/openclaw';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: Publish to private registry
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          npm publish --registry https://npmlib.amybot.ai/ --access restricted --no-git-checks
+
+      - name: Verify
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "Published @amybot/openclaw@${VERSION} to https://npmlib.amybot.ai/"
