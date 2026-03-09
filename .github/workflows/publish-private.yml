@@ -54,30 +54,14 @@ jobs:
         run: |
           node -e "
             const fs = require('fs');
-            const path = require('path');
-            const glob = require('glob');
-
-            // 1. Rename package.json
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
             pkg.name = '@amybot/openclaw';
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-
-            // 2. Patch CORE_PACKAGE_NAMES in dist to recognize the rebranded name
-            const distFiles = glob.sync('dist/**/*.js');
-            let patched = 0;
-            for (const file of distFiles) {
-              let content = fs.readFileSync(file, 'utf8');
-              if (content.includes('new Set([\"openclaw\"])')) {
-                content = content.replace(
-                  /new Set\(\[\"openclaw\"\]\)/g,
-                  'new Set([\"openclaw\", \"@amybot/openclaw\"])'
-                );
-                fs.writeFileSync(file, content);
-                patched++;
-              }
-            }
-            console.log('Patched CORE_PACKAGE_NAMES in ' + patched + ' dist files');
           "
+          # Patch CORE_PACKAGE_NAMES in dist to recognize the rebranded name
+          find dist -name '*.js' -exec grep -l 'new Set(\["openclaw"\])' {} + \
+            | xargs -r sed -i 's/new Set(\["openclaw"\])/new Set(["openclaw", "@amybot\/openclaw"])/g'
+          echo "Patched CORE_PACKAGE_NAMES in dist files"
 
       - name: Publish to private registry
         run: |
