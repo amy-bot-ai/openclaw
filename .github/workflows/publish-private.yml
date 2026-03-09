@@ -50,13 +50,33 @@ jobs:
         env:
           PRIVATE_NPM_TOKEN: ${{ secrets.PRIVATE_NPM_TOKEN }}
 
-      - name: Rename package for private registry
+      - name: Rebrand package for private registry
         run: |
           node -e "
             const fs = require('fs');
+            const path = require('path');
+            const glob = require('glob');
+
+            // 1. Rename package.json
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
             pkg.name = '@amybot/openclaw';
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+
+            // 2. Patch CORE_PACKAGE_NAMES in dist to recognize the rebranded name
+            const distFiles = glob.sync('dist/**/*.js');
+            let patched = 0;
+            for (const file of distFiles) {
+              let content = fs.readFileSync(file, 'utf8');
+              if (content.includes('new Set([\"openclaw\"])')) {
+                content = content.replace(
+                  /new Set\(\[\"openclaw\"\]\)/g,
+                  'new Set([\"openclaw\", \"@amybot/openclaw\"])'
+                );
+                fs.writeFileSync(file, content);
+                patched++;
+              }
+            }
+            console.log('Patched CORE_PACKAGE_NAMES in ' + patched + ' dist files');
           "
 
       - name: Publish to private registry
