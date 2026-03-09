@@ -1,9 +1,8 @@
 name: Publish to Private Registry
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [published]
 
 concurrency:
   group: publish-private-${{ github.ref }}
@@ -18,6 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.release.tag_name }}
           submodules: false
 
       - name: Setup Node environment
@@ -47,10 +47,12 @@ jobs:
       - name: Publish to private registry
         run: |
           set -euo pipefail
-          VERSION="${GITHUB_REF#refs/tags/v}"
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
           npm publish --registry https://npmlib.amybot.ai/ --access restricted --no-git-checks
 
       - name: Verify
         run: |
-          VERSION="${GITHUB_REF#refs/tags/v}"
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
           echo "Published @amybot/openclaw@${VERSION} to https://npmlib.amybot.ai/"
