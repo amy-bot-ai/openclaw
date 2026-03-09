@@ -5,9 +5,15 @@ on:
     tags:
       # Match stable release tags only (e.g. v2026.3.7), skip beta/prerelease
       - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v2026.3.7)"
+        required: true
+        type: string
 
 concurrency:
-  group: publish-private-${{ github.ref }}
+  group: publish-private-${{ github.event.inputs.tag || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -15,11 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      PUBLISH_REF: ${{ github.event.inputs.tag || github.ref }}
     steps:
       - name: Checkout release tag
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ env.PUBLISH_REF }}
           submodules: false
 
       - name: Fetch workflow files from main
@@ -54,10 +62,12 @@ jobs:
       - name: Publish to private registry
         run: |
           set -euo pipefail
-          VERSION="${GITHUB_REF#refs/tags/v}"
+          VERSION="${PUBLISH_REF#refs/tags/}"
+          VERSION="${VERSION#v}"
           npm publish --registry https://npmlib.amybot.ai/ --access restricted --no-git-checks
 
       - name: Verify
         run: |
-          VERSION="${GITHUB_REF#refs/tags/v}"
+          VERSION="${PUBLISH_REF#refs/tags/}"
+          VERSION="${VERSION#v}"
           echo "Published @amybot/openclaw@${VERSION} to https://npmlib.amybot.ai/"
