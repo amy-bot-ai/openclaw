@@ -54,7 +54,7 @@ jobs:
       - name: Rebrand package for private registry
         run: |
           VERSION="${PUBLISH_REF#refs/tags/}"
-          VERSION="${VERSION#v}"
+          export VERSION="${VERSION#v}"
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -62,6 +62,7 @@ jobs:
             pkg.version = process.env.VERSION;
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
+          echo "Rebranded as @amybot/openclaw@${VERSION}"
           # Patch CORE_PACKAGE_NAMES in dist to recognize the rebranded name
           find dist -name '*.js' -exec grep -l 'new Set(\["openclaw"\])' {} + \
             | xargs -r sed -i 's/new Set(\["openclaw"\])/new Set(["openclaw", "@amybot\/openclaw"])/g'
