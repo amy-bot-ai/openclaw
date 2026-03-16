@@ -53,10 +53,13 @@ jobs:
 
       - name: Rebrand package for private registry
         run: |
+          VERSION="${PUBLISH_REF#refs/tags/}"
+          VERSION="${VERSION#v}"
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
             pkg.name = '@amybot/openclaw';
+            pkg.version = process.env.VERSION;
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
           # Patch CORE_PACKAGE_NAMES in dist to recognize the rebranded name
