@@ -73,7 +73,12 @@ jobs:
           set -euo pipefail
           VERSION="${PUBLISH_REF#refs/tags/}"
           VERSION="${VERSION#v}"
-          npm publish --registry https://npmlib.amybot.ai/ --access restricted --no-git-checks --ignore-scripts
+          # Use --tag patch for fork patch versions (e.g. 2026.3.13-1) since npm treats them as prereleases
+          TAG_FLAG=""
+          if [[ "$VERSION" == *-* ]]; then
+            TAG_FLAG="--tag patch"
+          fi
+          npm publish --registry https://npmlib.amybot.ai/ --access restricted --no-git-checks --ignore-scripts $TAG_FLAG
 
       - name: Verify
         run: |
